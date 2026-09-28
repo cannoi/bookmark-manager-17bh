@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const faviconInput = document.getElementById('favicon-input');
 
   fetchMetaBtn.addEventListener('click', async () => {
-    const url = urlInput.value.trim();
+    let url = urlInput.value.trim();
     if (!url) return;
     fetchMetaBtn.textContent = 'Fetching...';
     try {
@@ -112,106 +112,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load Bookmarks
   async function loadBookmarks() {
-    let url = '/api/bookmarks?';
-    const params = new URLSearchParams();
-    if (currentFolder) params.append('folder_id', currentFolder);
-    if (currentTag) params.append('tag', currentTag);
-    if (currentSearch) params.append('search', currentSearch);
+    let fetchUrl = '/api/bookmarks?';
+    if (currentFolder) fetchUrl += `folder_id=${currentFolder}&`;
+    if (currentTag) fetchUrl += `tag=${encodeURIComponent(currentTag)}&`;
+    if (currentSearch) fetchUrl += `search=${encodeURIComponent(currentSearch)}&`;
 
-    const res = await fetch(url + params.toString());
-    const bookmarks = await res.json();
+    try {
+      const res = await fetch(fetchUrl);
+      const bookmarks = await res.json();
+      const grid = document.getElementById('bookmark-grid');
+      const countBadge = document.getElementById('bookmark-count');
+      countBadge.textContent = `${bookmarks.length} bookmark${bookmarks.length === 1 ? '' : 's'}`;
+      grid.innerHTML = '';
 
-    const grid = document.getElementById('bookmark-grid');
-    const countBadge = document.getElementById('bookmark-count');
-    grid.innerHTML = '';
-    countBadge.textContent = `${bookmarks.length} bookmark${bookmarks.length === 1 ? '' : 's'}`;
+      if (bookmarks.length === 0) {
+        grid.innerHTML = `<div class="empty-state">No bookmarks found.</div>`;
+        return;
+      }
 
-    if (bookmarks.length === 0) {
-      grid.innerHTML = `<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px;">No bookmarks found.</p>`;
-      return;
-    }
+      bookmarks.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'bookmark-card';
+        
+        const domain = new URL(b.url).hostname;
+        const favicon = b.favicon || `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(b.url)}`;
 
-    bookmarks.forEach(b => {
-      const card = document.createElement('div');
-      card.className = 'bookmark-card';
+        card.innerHTML = `
+          <div class="card-header">
+            <img src="${favicon}" class="favicon" onerror="this.src='https://www.google.com/s2/favicons?domain_url=example.com'">
+            <a href="${b.url}" target="_blank" class="card-title">${escapeHtml(b.title)}</a>
+          </div>
+          ${b.notes ? `<p class="card-notes">${escapeHtml(b.notes)}</p>` : ''}
+          <div class="card-footer">
+            <div class="card-tags">
+              ${b.tags ? b.tags.map(t => `<span class="card-tag">#${escapeHtml(t)}</span>`).join('') : ''}
+            </div>
+            <button class="delete-btn" data-id="${b.id}" title="Delete">
+              &times;
+            </button>
+          </div>
+        `;
 
-      const tagsHtml = b.tags.map(t => `<span class="card-tag">#${t}</span>`).join('');
-      const favicon = b.favicon || 'https://www.google.com/s2/favicons?domain_url=' + encodeURIComponent(b.url);
+        card.querySelector('.delete-btn').addEventListener('click', async () => {
+          if (confirm('Delete this bookmark?')) {
+            await fetch(`/api/bookmarks/${b.id}`, { method: 'DELETE' });
+            loadBookmarks();
+            loadSidebar();
+          }
+        });
 
-      card.innerHTML = `
-        <div class="card-header">
-          <img src="${favicon}" alt="" onerror="this.src='https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(b.url)}'">
-          <a href="${b.url}" target="_blank" title="${b.title}">${escapeHtml(b.title)}</a>
-        </div>
-        ${b.notes ? `<div class="card-notes">${escapeHtml(b.notes)}</div>` : ''}
-        <div class="card-footer">
-          <div class="card-tags">${tagsHtml}</div>
-          <button class="delete-bm" data-id="${b.id}">Delete</button>
-        </div>
-      `;
-
-      card.querySelector('.delete-bm').addEventListener('click', async () => {
-        if (confirm('Delete this bookmark?')) {
-          await fetch(`/api/bookmarks/${b.id}`, { method: 'DELETE' });
-          loadBookmarks();
-          loadSidebar();
-        }
+        grid.appendChild(card);
       });
-
-      grid.appendChild(card);
-    });
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  // Search Input
-  const searchInput = document.getElementById('search-input');
-  let searchTimeout;
-  searchInput.addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      currentSearch = e.target.value.trim();
-      loadBookmarks();
-    }, 300);
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  // Search input
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    currentSearch = e.target.value.trim();
+    loadBookmarks();
   });
 
-  // Add Bookmark Submit
+  // Add Bookmark form submit
   document.getElementById('add-bookmark-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const url = urlInput.value.trim();
-    const title = titleInput.value.trim();
-    const folder_id = document.getElementById('folder-select').value;
-    const notes = document.getElementById('notes-input').value.trim();
-    const favicon = faviconInput.value;
+    const url = document.getElementById('url-input').value.trim();
+    const title = document.getElementById('title-input').value.trim();
+    const folder_id = document.getElementById('folder-select').value || null;
     const tags = document.getElementById('tags-input').value.split(',').map(t => t.trim()).filter(Boolean);
+    const notes = document.getElementById('notes-input').value.trim();
+    const favicon = document.getElementById('favicon-input').value.trim();
 
     await fetch('/api/bookmarks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, title, folder_id: folder_id || null, notes, favicon, tags })
+      body: JSON.stringify({ url, title, folder_id, tags, notes, favicon })
     });
 
     modal.classList.remove('active');
     document.getElementById('add-bookmark-form').reset();
-    faviconInput.value = '';
+    document.getElementById('favicon-input').value = '';
     loadBookmarks();
     loadSidebar();
   });
 
-  // Export JSON
-  document.getElementById('export-btn').addEventListener('click', async () => {
-    const res = await fetch('/api/bookmarks');
-    const data = await res.json();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bookmarks-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-  });
-
-  function escapeHtml(str) {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-  }
-
+  // Initial load
   loadSidebar();
   loadBookmarks();
 });
