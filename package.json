@@ -1,0 +1,16 @@
+{
+  "name": "bookmark-manager",
+  "version": "1.0.0",
+  "description": "A clean, efficient web application to save, organize, tag, and search favorite websites.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/app.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cheerio": "^1.0.0-rc.12",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {}
+}

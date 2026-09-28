@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmark Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+<style>.paf-made-by{position:fixed;right:8px;bottom:8px;width:min(72px,12vw);max-width:12vw;height:auto;object-fit:contain;opacity:.5;background:transparent;padding:0;border:0;box-shadow:none;filter:none;pointer-events:none;z-index:30}</style></head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <h2>📚 Bookmarks</h2>
+      </div>
+      <div class="sidebar-section">
+        <button class="btn-primary" id="open-add-modal">+ Add Bookmark</button>
+      </div>
+      <div class="sidebar-section">
+        <h3>Folders</h3>
+        <ul id="folder-list">
+          <li class="active" data-folder="">All Bookmarks</li>
+        </ul>
+        <div class="add-folder-group">
+          <input type="text" id="new-folder-input" placeholder="New folder...">
+          <button id="add-folder-btn">+</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Tags</h3>
+        <div id="tag-cloud" class="tag-cloud">
+          <!-- Tags inserted dynamically -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Search titles, URLs, notes, tags...">
+        </div>
+        <div class="top-actions">
+          <button id="theme-toggle" class="btn-icon" title="Toggle Theme">🌙</button>
+          <button id="export-btn" class="btn-secondary">Export JSON</button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <div class="section-header">
+          <h2 id="current-view-title">All Bookmarks</h2>
+          <span id="bookmark-count" class="badge">0 bookmarks</span>
+        </div>
+        <div id="bookmark-grid" class="bookmark-grid">
+          <!-- Bookmarks rendered here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Bookmark Modal -->
+  <div id="add-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h2>Add New Bookmark</h2>
+      <form id="add-bookmark-form">
+        <div class="form-group">
+          <label>Website URL *</label>
+          <div class="url-input-group">
+            <input type="url" id="url-input" required placeholder="https://example.com">
+            <button type="button" id="fetch-meta-btn" class="btn-secondary">Fetch Meta</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="title-input" required placeholder="Website Title">
+        </div>
+        <div class="form-group">
+          <label>Folder</label>
+          <select id="folder-select">
+            <!-- Folders -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tags (comma separated)</label>
+          <input type="text" id="tags-input" placeholder="tech, news, reading">
+        </div>
+        <div class="form-group">
+          <label>Personal Notes</label>
+          <textarea id="notes-input" rows="3" placeholder="Add context or summary..."></textarea>
+        </div>
+        <input type="hidden" id="favicon-input">
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary close-modal">Cancel</button>
+          <button type="submit" class="btn-primary">Save Bookmark</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  
+  <script src="app.js"></script>
+<img class="paf-made-by" src="/made-by.png" alt="Made with App Builder — Pi SoloHost"></body>
+</html>
